@@ -99,6 +99,8 @@ class Diffusion(object):
         args, config = self.args, self.config
         tb_logger = self.config.tb_logger
         dataset, test_dataset = get_dataset(args, config)
+        # subset_indices = np.random.choice(len(dataset), 10, replace=False)
+        # dataset = data.Subset(dataset, subset_indices)
         train_loader = data.DataLoader(
             dataset,
             batch_size=config.training.batch_size,
@@ -131,6 +133,8 @@ class Diffusion(object):
                 ema_helper.load_state_dict(states[4])
 
         for epoch in range(start_epoch, self.config.training.n_epochs):
+            print(f'start_epoch: {start_epoch}, self.config.training.n_epochs: {self.config.training.n_epochs}')
+            print(f'len(train_loader): {len(train_loader)}')
             data_start = time.time()
             data_time = 0
             for i, (x, y) in enumerate(train_loader):
@@ -154,7 +158,7 @@ class Diffusion(object):
                 tb_logger.add_scalar("loss", loss, global_step=step)
 
                 logging.info(
-                    f"step: {step}, loss: {loss.item()}, data time: {data_time / (i+1)}"
+                    f"epoch: {epoch}, step: {step}, loss: {loss.item()}, data time: {data_time / (i+1)}"
                 )
 
                 optimizer.zero_grad()

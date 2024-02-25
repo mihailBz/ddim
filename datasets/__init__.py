@@ -3,7 +3,7 @@ import torch
 import numbers
 import torchvision.transforms as transforms
 import torchvision.transforms.functional as F
-from torchvision.datasets import CIFAR10
+from torchvision.datasets import CIFAR10, ImageFolder
 from datasets.celeba import CelebA
 from datasets.ffhq import FFHQ
 from datasets.lsun import LSUN
@@ -43,8 +43,16 @@ def get_dataset(args, config):
         test_transform = transforms.Compose(
             [transforms.Resize(config.data.image_size), transforms.ToTensor()]
         )
-
-    if config.data.dataset == "CIFAR10":
+    if config.data.dataset == "CUSTOM":  # Replace YOUR_DATASET_NAME with the name of your dataset
+        dataset = ImageFolder(
+            "./custom_dataset/train",  # Path to training dataset
+            transform=tran_transform
+        )
+        test_dataset = ImageFolder(
+            "./custom_dataset/test",  # Path to test dataset
+            transform=test_transform
+        )
+    elif config.data.dataset == "CIFAR10":
         dataset = CIFAR10(
             os.path.join(args.exp, "datasets", "cifar10"),
             train=True,

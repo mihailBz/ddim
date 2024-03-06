@@ -1,5 +1,5 @@
 data:
-    dataset: "CUSTOM"
+    dataset: "CUSTOM_CIFAR"
     image_size: 32
     channels: 3
     logit_transform: false
@@ -15,7 +15,7 @@ model:
     out_ch: 3
     ch: 128
     ch_mult: [1, 2, 2, 2]
-    num_res_blocks: 2
+    num_res_blocks: 3
     attn_resolutions: [16, ]
     dropout: 0.1
     var_type: fixedlarge
@@ -34,14 +34,15 @@ training:
     n_epochs: 10000
     snapshot_freq: 5000
 
-#sampling:
-#    batch_size: 64
-#    last_only: True
+sampling:
+    ckpt_id: 1
+    batch_size: 3
+    last_only: True
 
 optim:
     weight_decay: 0.000
     optimizer: "Adam"
-    lr: 0.0002
+    lr: 0.0001
     beta1: 0.9
     amsgrad: false
     eps: 0.00000001

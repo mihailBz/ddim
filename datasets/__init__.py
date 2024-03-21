@@ -10,7 +10,7 @@ from datasets.lsun import LSUN
 from torch.utils.data import Subset
 import numpy as np
 
-from datasets.Dataset import CIFARDataset
+from datasets.Dataset import CIFARDataset, CelebDataset
 
 
 class Crop(object):
@@ -45,18 +45,18 @@ def get_dataset(args, config):
         test_transform = transforms.Compose(
             [transforms.Resize(config.data.image_size), transforms.ToTensor()]
         )
-    if config.data.dataset == "CUSTOM_CIFAR":
+    if config.data.dataset == "CIFAR_ONE":
         dataset = CIFARDataset(32, 32, n=1, seed=10)
         test_dataset = None
-    elif config.data.dataset == "CUSTOM":  # Replace YOUR_DATASET_NAME with the name of your dataset
-        dataset = ImageFolder(
-            "./custom_dataset/train",  # Path to training dataset
-            transform=tran_transform
-        )
-        test_dataset = ImageFolder(
-            "./custom_dataset/test",  # Path to test dataset
-            transform=test_transform
-        )
+    elif config.data.dataset == "CIFAR_THREE":
+        dataset = CIFARDataset(32, 32, n=3, seed=10)
+        test_dataset = None
+    elif config.data.dataset == "CELEB_ONE":
+        dataset = CelebDataset(64, 64, n=1)
+        test_dataset = None
+    elif config.data.dataset == "CELEB_THREE":
+        dataset = CelebDataset(64, 64, n=3)
+        test_dataset = None
     elif config.data.dataset == "CIFAR10":
         dataset = CIFAR10(
             os.path.join(args.exp, "datasets", "cifar10"),

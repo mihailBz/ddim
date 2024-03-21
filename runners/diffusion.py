@@ -16,6 +16,7 @@ from datasets import get_dataset, data_transform, inverse_data_transform
 from functions.ckpt_util import get_ckpt_path
 
 import torchvision.utils as tvu
+import pandas as pd
 
 
 def torch2hwcuint8(x, clip=False):
@@ -31,13 +32,13 @@ def get_beta_schedule(beta_schedule, *, beta_start, beta_end, num_diffusion_time
 
     if beta_schedule == "quad":
         betas = (
-            np.linspace(
-                beta_start ** 0.5,
-                beta_end ** 0.5,
-                num_diffusion_timesteps,
-                dtype=np.float64,
-            )
-            ** 2
+                np.linspace(
+                    beta_start ** 0.5,
+                    beta_end ** 0.5,
+                    num_diffusion_timesteps,
+                    dtype=np.float64,
+                )
+                ** 2
         )
     elif beta_schedule == "linear":
         betas = np.linspace(
@@ -86,7 +87,7 @@ class Diffusion(object):
             [torch.ones(1).to(device), alphas_cumprod[:-1]], dim=0
         )
         posterior_variance = (
-            betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
+                betas * (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod)
         )
         if self.model_var_type == "fixedlarge":
             self.logvar = betas.log()
@@ -131,7 +132,8 @@ class Diffusion(object):
             step = states[3]
             if self.config.model.ema:
                 ema_helper.load_state_dict(states[4])
-
+        # df = pd.DataFrame(columns=['epoch', 'step_number', 'loss', 'training_time'])
+        progress = []
         epoch_training_time = []
         for epoch in range(start_epoch, self.config.training.n_epochs):
             logging.info(f'start_epoch: {start_epoch}, self.config.training.n_epochs: {self.config.training.n_epochs}')
@@ -157,11 +159,12 @@ class Diffusion(object):
                 ).to(self.device)
                 t = torch.cat([t, self.num_timesteps - t - 1], dim=0)[:n]
                 loss = loss_registry[config.model.type](model, x, t, e, b)
+                normalized_loss = 1 / (1 + torch.exp(-loss))
 
                 tb_logger.add_scalar("loss", loss, global_step=step)
 
                 logging.info(
-                    f"epoch: {epoch}, step: {step}, loss: {loss.item()}, data time: {data_time / (i + 1)}, training time: {training_time}"
+                    f"epoch: {epoch}, step: {step}, norm loss: {normalized_loss},loss: {loss.item()}, data time: {data_time / (i + 1)}, training time: {training_time}"
                 )
 
                 optimizer.zero_grad()
@@ -194,11 +197,16 @@ class Diffusion(object):
                     )
                     torch.save(states, os.path.join(self.args.log_path, "ckpt.pth"))
                 training_time += time.time() - training_start
+                progress.append({'epoch': epoch, 'step_number': step, 'loss': loss.item(),
+                                 'normalized_loss': normalized_loss.item(),
+                                 'training_time': training_time})
 
                 data_start = time.time()
             logging.info(f"epoch training time: {training_time}")
             epoch_training_time.append(training_time)
         logging.info(f"overall training time: {sum(epoch_training_time)}")
+        df = pd.DataFrame(progress)
+        df.to_csv(os.path.join(self.args.log_path, 'progress.csv'), index=False)
 
     def sample(self):
         model = Model(self.config)
@@ -261,7 +269,7 @@ class Diffusion(object):
 
         with torch.no_grad():
             for _ in tqdm.tqdm(
-                range(n_rounds), desc="Generating image samples for FID evaluation."
+                    range(n_rounds), desc="Generating image samples for FID evaluation."
             ):
                 n = config.sampling.batch_size
                 x = torch.randn(
@@ -310,8 +318,8 @@ class Diffusion(object):
         def slerp(z1, z2, alpha):
             theta = torch.acos(torch.sum(z1 * z2) / (torch.norm(z1) * torch.norm(z2)))
             return (
-                torch.sin((1 - alpha) * theta) / torch.sin(theta) * z1
-                + torch.sin(alpha * theta) / torch.sin(theta) * z2
+                    torch.sin((1 - alpha) * theta) / torch.sin(theta) * z1
+                    + torch.sin(alpha * theta) / torch.sin(theta) * z2
             )
 
         z1 = torch.randn(
@@ -339,7 +347,7 @@ class Diffusion(object):
         # Hard coded here, modify to your preferences
         with torch.no_grad():
             for i in range(0, x.size(0), 8):
-                xs.append(self.sample_image(x[i : i + 8], model))
+                xs.append(self.sample_image(x[i: i + 8], model))
         x = inverse_data_transform(config, torch.cat(xs, dim=0))
         for i in range(x.size(0)):
             tvu.save_image(x[i], os.path.join(self.args.image_folder, f"{i}.png"))
@@ -356,10 +364,10 @@ class Diffusion(object):
                 seq = range(0, self.num_timesteps, skip)
             elif self.args.skip_type == "quad":
                 seq = (
-                    np.linspace(
-                        0, np.sqrt(self.num_timesteps * 0.8), self.args.timesteps
-                    )
-                    ** 2
+                        np.linspace(
+                            0, np.sqrt(self.num_timesteps * 0.8), self.args.timesteps
+                        )
+                        ** 2
                 )
                 seq = [int(s) for s in list(seq)]
             else:
@@ -374,10 +382,10 @@ class Diffusion(object):
                 seq = range(0, self.num_timesteps, skip)
             elif self.args.skip_type == "quad":
                 seq = (
-                    np.linspace(
-                        0, np.sqrt(self.num_timesteps * 0.8), self.args.timesteps
-                    )
-                    ** 2
+                        np.linspace(
+                            0, np.sqrt(self.num_timesteps * 0.8), self.args.timesteps
+                        )
+                        ** 2
                 )
                 seq = [int(s) for s in list(seq)]
             else:

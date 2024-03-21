@@ -1,11 +1,11 @@
 data:
-    dataset: "CUSTOM_CIFAR"
+    dataset: "CELEB_ONE"
     image_size: 32
     channels: 3
     logit_transform: false
     uniform_dequantization: false
     gaussian_dequantization: false
-    random_flip: true
+    random_flip: false
     rescaled: true
     num_workers: 1
 
@@ -20,7 +20,7 @@ model:
     dropout: 0.1
     var_type: fixedlarge
     ema_rate: 0.9999
-    ema: True
+    ema: False
     resamp_with_conv: True
 
 diffusion:
@@ -30,8 +30,8 @@ diffusion:
     num_diffusion_timesteps: 1000
 
 training:
-    batch_size: 3
-    n_epochs: 10000
+    batch_size: 1
+    n_epochs: 20001
     snapshot_freq: 5000
 
 sampling:

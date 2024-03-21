@@ -93,7 +93,7 @@ class CelebDataset(Dataset):
         with open(os.path.join(dir_path, 'datasets/celeb_data.pkl'), 'br') as f:
             data = pickle.load(f)
         self.transform = v2.Compose([
-            v2.ToImageTensor(),
+            v2.ToTensor(),
             v2.Resize((W, H), interpolation=v2.InterpolationMode.BICUBIC, antialias=True)
         ])
 
@@ -105,4 +105,4 @@ class CelebDataset(Dataset):
 
     def __getitem__(self, idx):
         raw = self.data[idx]
-        return (raw - raw.min()) / (raw.max() - raw.min())
+        return (raw - raw.min()) / (raw.max() - raw.min()), 0

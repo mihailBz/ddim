@@ -90,7 +90,7 @@ class FlowersDataset(Dataset):
 
 class CelebDataset(Dataset):
     def __init__(self, H, W, n=3):
-        with open(os.path.join(dir_path, 'datasets/celeb_data.pkl'), 'br') as f:
+        with open(os.path.join(dir_path, 'celeb_data.pkl'), 'br') as f:
             data = pickle.load(f)
         self.transform = v2.Compose([
             v2.ToTensor(),

@@ -132,17 +132,17 @@ class Diffusion(object):
             step = states[3]
             if self.config.model.ema:
                 ema_helper.load_state_dict(states[4])
-        # df = pd.DataFrame(columns=['epoch', 'step_number', 'loss', 'training_time'])
         progress = []
-        epoch_training_time = []
+        total_training_time = 0
+        training_start = time.time()
         for epoch in range(start_epoch, self.config.training.n_epochs):
             logging.info(f'start_epoch: {start_epoch}, self.config.training.n_epochs: {self.config.training.n_epochs}')
             logging.info(f'len(train_loader): {len(train_loader)}')
-            training_start = time.time()
             data_start = time.time()
-            training_time = 0
             data_time = 0
             for i, (x, y) in enumerate(train_loader):
+                training_time = 0
+                step_start = time.time()
                 n = x.size(0)
                 data_time += time.time() - data_start
                 model.train()
@@ -159,12 +159,11 @@ class Diffusion(object):
                 ).to(self.device)
                 t = torch.cat([t, self.num_timesteps - t - 1], dim=0)[:n]
                 loss = loss_registry[config.model.type](model, x, t, e, b)
-                normalized_loss = 1 / (1 + torch.exp(-loss))
 
                 tb_logger.add_scalar("loss", loss, global_step=step)
 
                 logging.info(
-                    f"epoch: {epoch}, step: {step}, norm loss: {normalized_loss},loss: {loss.item()}, data time: {data_time / (i + 1)}, training time: {training_time}"
+                    f"epoch: {epoch}, step: {step}, loss: {loss.item()}, data time: {data_time / (i + 1)}"
                 )
 
                 optimizer.zero_grad()
@@ -197,14 +196,11 @@ class Diffusion(object):
                     )
                     torch.save(states, os.path.join(self.args.log_path, "ckpt.pth"))
                 training_time += time.time() - training_start
+                total_training_time += time.time() - step_start
                 progress.append({'epoch': epoch, 'step_number': step, 'loss': loss.item(),
-                                 'normalized_loss': normalized_loss.item(),
-                                 'training_time': training_time})
+                                 'total_training_time': total_training_time})
 
                 data_start = time.time()
-            logging.info(f"epoch training time: {training_time}")
-            epoch_training_time.append(training_time)
-        logging.info(f"overall training time: {sum(epoch_training_time)}")
         df = pd.DataFrame(progress)
         df.to_csv(os.path.join(self.args.log_path, 'progress.csv'), index=False)
 
